@@ -1,0 +1,59 @@
+import os
+import requests
+
+
+def run():
+  url = (
+      'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids='
+      'bitcoin,ripple&order=market_cap_desc&sparkline=false&'
+      'price_change_percentage=24h'
+  )
+  try:
+    response = requests.get(url, timeout=10)
+    data = response.json()
+
+    btc = next((item for item in data if item['symbol'] == 'btc'), None)
+    xrp = next((item for item in data if item['symbol'] == 'xrp'), None)
+
+    if not btc or not xrp:
+      print('Data koin tidak ditemukan')
+      return
+
+    # Susun format laporan detail sesuai keinginan lo
+    report = (
+        '📊 *Analisis Kripto Harian (BTC & XRP)*\n\n'
+        '- *Bitcoin (BTC)*\n'
+        f'  1) Harga & perubahan utama: ${btc["current_price"]:,}. '
+        f'Perubahan 24 jam: {btc["price_change_percentage_24h"]:.2f}%. '
+        f'High/Low 24j: ${btc["high_24h"]:,} / ${btc["low_24h"]:,}. '
+        f'Volume 24j ≈ ${btc["total_volume"]:,}; '
+        f'Market cap ≈ ${btc["market_cap"]:,}.\n'
+        '  2) Tren singkat: Pergerakan harga menunjukkan '
+        'fluktuasi harian yang aktif.\n'
+        '  3) Sinyal umum: Cenderung mengikuti arah momentum 24 jam.\n\n'
+        '- *XRP (XRP)*\n'
+        f'  1) Harga & perubahan utama: ${xrp["current_price"]:,}. '
+        f'Perubahan 24 jam: {xrp["price_change_percentage_24h"]:.2f}%. '
+        f'High/Low 24j: ${xrp["high_24h"]:,} / ${xrp["low_24h"]:,}. '
+        f'Volume 24j ≈ ${xrp["total_volume"]:,}; '
+        f'Market cap ≈ ${xrp["market_cap"]:,}.\n'
+        '  2) Tren singkat: Volatilitas terpantau pada rentang harian.\n'
+        '  3) Sinyal umum: Perhatikan level support dan resistance terdekat.\n\n'
+        '_Pesan otomatis dari GitHub Actions._'
+    )
+
+    # Kirim ke Telegram
+    token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    chat_id = os.environ.get('TELEGRAM_CHAT_ID')
+    tg_url = f'https://api.telegram.org/bot{token}/sendMessage'
+    payload = {'chat_id': chat_id, 'text': report, 'parse_mode': 'Markdown'}
+
+    res = requests.post(tg_url, json=payload)
+    print('Respon Telegram:', res.text)
+
+  except Exception as e:
+    print(f'Terjadi error: {e}')
+
+
+if __name__ == '__main__':
+  run()
